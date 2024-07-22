@@ -3,7 +3,7 @@
     <h2>Conversation</h2>
     <input v-model="userInput" placeholder="Ask a question" class="question-input" />
     <input type="file" @change="onFileChange" ref="fileInput" />
-    <div v-if="imageUrl" class="image-preview">
+    <div v-if="imageUrl" class="images-preview">
       <img :src="imageUrl" alt="Image Preview" />
     </div>
     <button @click="askQuestion">Ask</button>
@@ -14,8 +14,8 @@
             <strong>{{ message.role === 'user' ? 'Question:' : 'Answer' }}</strong>
             {{ message.role === 'user' ? message.content : `(${message.time} sec): ${message.content}` }}
           </p>
-          <div v-if="message.image" class="message-image">
-            <img :src="message.image" alt="Message Image" />
+          <div v-if="message.images" class="message-images">
+            <img :src="message.images" alt="Message Image" />
           </div>
         </div>
       </div>
@@ -56,12 +56,12 @@ export default {
       const userMessage = {
         role: 'user',
         content: this.userInput,
-        image: this.imageUrl,
+        images: this.imageUrl,
         time: null // 用户消息没有时间
       };
       this.conversation.push(userMessage);
       const startTime = new Date(); // 记录开始时间
-      console.log(this.conversation)
+
       try {
         let imageBase64 = '';
         if (this.imageFile) {
@@ -73,7 +73,7 @@ export default {
           messages: this.conversation.map(m => ({
             role: m.role,
             content: m.content,
-            image: m.image ? m.image : null
+            images: m.images ? m.images : null
           })),
           image: imageBase64
         });
@@ -84,7 +84,7 @@ export default {
         const botMessage = {
           role: 'assistant',
           content: response.data.message.content,
-          image: response.data.message.image,
+          images: response.data.message.image,
           time: this.responseTime // 机器人消息包含时间
         };
         this.conversation.push(botMessage);
@@ -133,7 +133,6 @@ export default {
 }
 
 .question-input {
-  //width: calc(100% - 20px);
   width: 100%;
   padding: 5px;
   margin-bottom: 10px;
@@ -149,14 +148,14 @@ button {
   margin-bottom: 20px; /* 增加按钮与对话之间的间隔 */
 }
 
-.image-preview {
+.images-preview {
   max-width: 100%;
   max-height: 200px;
   overflow: hidden;
   margin-bottom: 10px; /* 增加图片预览与按钮之间的间隔 */
 }
 
-.image-preview img {
+.images-preview img {
   width: 100%;
   height: auto;
   display: block;
@@ -192,7 +191,7 @@ button {
   margin: 0;
 }
 
-.message-image img {
+.message-images img {
   max-width: 100%;
   max-height: 200px;
   display: block;
