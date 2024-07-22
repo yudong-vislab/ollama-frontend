@@ -53,13 +53,6 @@ export default {
       this.error = null;
       this.responseTime = null;
 
-      const userMessage = {
-        role: 'user',
-        content: this.userInput,
-        images: this.imageUrl,
-        time: null // 用户消息没有时间
-      };
-      this.conversation.push(userMessage);
       const startTime = new Date(); // 记录开始时间
 
       try {
@@ -67,6 +60,13 @@ export default {
         if (this.imageFile) {
           imageBase64 = await this.convertToBase64(this.imageFile);
         }
+        const userMessage = {
+          role: 'user',
+          content: this.userInput,
+          images: imageBase64 ? [imageBase64] : null,
+          time: null // 用户消息没有时间
+        };
+        this.conversation.push(userMessage);
 
         const response = await axios.post('http://127.0.0.1:5000/api/chat', {
           model: 'llava',
