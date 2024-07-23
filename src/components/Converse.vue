@@ -1,6 +1,10 @@
 <template>
   <div class="converse">
     <h2>Conversation</h2>
+    <select v-model="selectedModel">
+      <option value="llava">llava 7b</option>
+      <option value="llama3">llama3 8b</option>
+    </select>
     <input v-model="userInput" placeholder="Ask a question" class="question-input" />
     <input type="file" @change="onFileChange" ref="fileInput" />
     <div v-if="imageUrl" class="images-preview">
@@ -38,7 +42,8 @@ export default {
       imageUrl: '',
       conversation: [],
       error: null,
-      responseTime: null
+      responseTime: null,
+      selectedModel: 'llava' 
     };
   },
   methods: {
@@ -50,56 +55,51 @@ export default {
       }
     },
     async askQuestion() {
-      this.error = null;
-      this.responseTime = null;
+    this.error = null;
+    this.responseTime = null;
 
-      const startTime = new Date(); // 记录开始时间
+    const startTime = new Date(); // Record start time
 
-      try {
-        let imageBase64 = '';
-        if (this.imageFile) {
-          imageBase64 = await this.convertToBase64(this.imageFile);
-        }
-        const userMessage = {
-          role: 'user',
-          content: this.userInput,
-          images: imageBase64 ? [imageBase64] : null,
-          time: null // 用户消息没有时间
-        };
-        this.conversation.push(userMessage);
+    let imageBase64 = '';
+    if (this.imageFile) {
+      imageBase64 = await this.convertToBase64(this.imageFile);
+    }
+    const userMessage = {
+      role: 'user',
+      content: this.userInput,
+      images: imageBase64 ? [imageBase64] : null,
+      time: null // User messages have no time
+    };
+    this.conversation.push(userMessage);
 
-        const response = await axios.post('http://127.0.0.1:5000/api/chat', {
-          model: 'llava',
-          messages: this.conversation.map(m => ({
-            role: m.role,
-            content: m.content,
-            images: m.images ? m.images : null
-          })),
-          image: imageBase64
-        });
+    this.userInput = ''; // Clear input field
+    this.imageFile = null;
+    this.imageUrl = ''; // Clear image preview
+    this.$refs.fileInput.value = ''; // Clear file input
+    this.scrollToBottom(); // Scroll to the bottom of the conversation
 
-        const endTime = new Date(); // 记录结束时间
-        this.responseTime = ((endTime - startTime) / 1000).toFixed(2); // 计算响应时间，单位为秒
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/api/chat', {
+        model: this.selectedModel,
+        messages: this.conversation
+      });
 
-        const botMessage = {
+    const endTime = new Date(); // Record end time
+    this.responseTime = ((endTime - startTime) / 1000).toFixed(2); // Calculate response time in seconds
+
+    const botMessage = {
           role: 'assistant',
           content: response.data.message.content,
           images: response.data.message.image,
-          time: this.responseTime // 机器人消息包含时间
+          time: this.responseTime // Include time in bot messages
         };
         this.conversation.push(botMessage);
       } catch (error) {
         this.error = `Error: ${error.message}`;
-        // 在发生错误时移除最后的用户消息，避免对话不完整
-        this.conversation.pop();
+        this.conversation.pop(); // Remove the last user message in case of an error to maintain conversation integrity
       }
-
-      this.userInput = ''; // 清空输入框
-      this.imageFile = null;
-      this.imageUrl = ''; // 清空图片预览
-      this.$refs.fileInput.value = ''; // 清空文件输入框
-      this.scrollToBottom(); // 滚动到最底部
     },
+
     convertToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
