@@ -2,9 +2,13 @@
   <div class="converse">
     <h2>Conversation</h2>
     <select v-model="selectedModel">
-      <option value="llava">llava 7b</option>
+      <option value="llava:7b">llava 7b</option>
       <option value="llama3">llama3 8b</option>
     </select>
+    <!-- <select llm-mode="respondemode">
+      <option value="generate">generate</option>
+      <option value="chat">chat</option>
+    </select> -->
     <input v-model="userInput" placeholder="Ask a question" class="question-input" />
     <input type="file" @change="onFileChange" ref="fileInput" />
     <div v-if="imageUrl" class="images-preview">
@@ -16,7 +20,11 @@
         <div :class="{'user-message': message.role === 'user', 'bot-message': message.role !== 'user'}">
           <p class="message-content">
             <strong>{{ message.role === 'user' ? 'Question:' : 'Answer' }}</strong>
-            {{ message.role === 'user' ? message.content : `(${message.time} sec): ${message.content}` }}
+            {{ message.role === 'user' ? message.content : `(${message.time} sec): ${message.content}`}}
+          </p>
+          <p class="conclude">
+            <strong>{{ 'conclude' }}</strong>
+            {{ conclude }}
           </p>
           <div v-if="message.images" class="message-images">
             <img :src="message.images" alt="Message Image" />
@@ -43,7 +51,9 @@ export default {
       conversation: [],
       error: null,
       responseTime: null,
-      selectedModel: 'llava' 
+      selectedModel: 'llava' ,
+      conclude:'here is conclusion'
+      // respondemode:'chat'
     };
   },
   methods: {
@@ -54,6 +64,18 @@ export default {
         this.imageUrl = URL.createObjectURL(file);
       }
     },
+    // async conclude(response){
+    //   try {
+    //     responsed = await axios.post('http://127.0.0.1:5000/api/generate', {
+    //       model: this.selectedModel,
+    //       prompt: "我将给你提供一段内容，这段内容是对一张图片的描述。请你用一两个词来总结这段文字，能够实现对这张未知图片的描述和标记。图片的文字描述如下："+response,
+    //     });
+    //   }catch (error) {
+    //     this.error = `Error: ${error.message}`; // Remove the last user message in case of an error to maintain conversation integrity
+    //   }
+    //   const conclude = responsed.data.response;
+    //   return conclude
+    // },
     async askQuestion() {
     this.error = null;
     this.responseTime = null;
@@ -81,23 +103,33 @@ export default {
     try {
       const response = await axios.post('http://127.0.0.1:5000/api/chat', {
         model: this.selectedModel,
-        messages: this.conversation
+        messages: this.conversation,
+        // respondemode:this.respondemode
       });
-
     const endTime = new Date(); // Record end time
     this.responseTime = ((endTime - startTime) / 1000).toFixed(2); // Calculate response time in seconds
-
+    this.conclude = response.data.message.conclude
     const botMessage = {
           role: 'assistant',
           content: response.data.message.content,
           images: response.data.message.image,
-          time: this.responseTime // Include time in bot messages
+          time: this.responseTime, // Include time in bot messages
         };
-        this.conversation.push(botMessage);
+    this.conversation.push(botMessage);
       } catch (error) {
         this.error = `Error: ${error.message}`;
         this.conversation.pop(); // Remove the last user message in case of an error to maintain conversation integrity
       }
+    // try{
+    //   const resp = this.conversation[-1];
+    //   const respe=resp.content;
+    //   const responsed = await axios.post('http://127.0.0.1:5000/api/generate', {
+    //     model: this.selectedModel,
+    //     prompt: "我将给你提供一段内容，这段内容是对一张图片的描述。请你用一两个词来总结这段文字，能够实现对这张未知图片的描述和标记。图片的文字描述如下："+respe,
+    //   });
+    //   this.conclude = responsed.data.conclude;
+    // }catch (error) {
+    //   this.error = `Error: ${error.message}`;}
     },
 
     convertToBase64(file) {
@@ -124,7 +156,7 @@ export default {
   top: 10px;
   left: 10px;
   width: 400px; /* 增加宽度以适应滚动条 */
-  height: 80vh; /* 设置高度以使其可滚动 */
+  height: 95vh; /* 设置高度以使其可滚动 */
   padding: 20px;
   background-color: #fff;
   border: 1px solid #ccc;
@@ -189,6 +221,14 @@ button {
 
 .message-content {
   margin: 0;
+}
+
+.conclude{
+  text-align: left;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .message-images img {
