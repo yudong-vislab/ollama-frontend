@@ -35,7 +35,12 @@ export default {
       } catch (error) {
         this.error = `Error: ${error.message}`;
     }
-    }
+    },
+    // async extratext(){
+    //   try{
+    //     const response = await axios.post('http://127.0.0.1；5000/extra')
+    //   }
+    // },
 },
 }
 </script>
