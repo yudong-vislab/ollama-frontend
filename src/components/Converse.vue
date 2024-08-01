@@ -5,16 +5,12 @@
       <option value="llava:7b">llava 7b</option>
       <option value="llama3">llama3 8b</option>
     </select>
-    <!-- <select llm-mode="respondemode">
-      <option value="generate">generate</option>
-      <option value="chat">chat</option>
-    </select> -->
     <input v-model="userInput" placeholder="Ask a question" class="question-input" />
     <input type="file" @change="onFileChange" ref="fileInput" />
     <div v-if="imageUrl" class="images-preview">
       <img :src="imageUrl" alt="Image Preview" />
     </div>
-    <button @click="askQuestion">Ask</button>
+    <button @click="askQuestion" class="ask-button">Ask</button>
     <div class="conversation-container">
       <div v-for="(message, index) in conversation" :key="index" class="message">
         <div :class="{'user-message': message.role === 'user', 'bot-message': message.role !== 'user'}">
@@ -22,8 +18,9 @@
             <strong>{{ message.role === 'user' ? 'Question:' : 'Answer' }}</strong>
             {{ message.role === 'user' ? message.content : `(${message.time} sec): ${message.content}`}}
           </p>
-          <p class="conclude">
-            <strong>{{ 'conclude' }}</strong>
+          <!-- Only display conclude for bot messages -->
+          <p v-if="message.role !== 'user'" class="conclude">
+            <strong>Conclude:</strong>
             {{ conclude }}
           </p>
           <div v-if="message.images" class="message-images">
@@ -64,18 +61,6 @@ export default {
         this.imageUrl = URL.createObjectURL(file);
       }
     },
-    // async conclude(response){
-    //   try {
-    //     responsed = await axios.post('http://127.0.0.1:5000/api/generate', {
-    //       model: this.selectedModel,
-    //       prompt: "我将给你提供一段内容，这段内容是对一张图片的描述。请你用一两个词来总结这段文字，能够实现对这张未知图片的描述和标记。图片的文字描述如下："+response,
-    //     });
-    //   }catch (error) {
-    //     this.error = `Error: ${error.message}`; // Remove the last user message in case of an error to maintain conversation integrity
-    //   }
-    //   const conclude = responsed.data.response;
-    //   return conclude
-    // },
     async askQuestion() {
     this.error = null;
     this.responseTime = null;
@@ -120,18 +105,7 @@ export default {
         this.error = `Error: ${error.message}`;
         this.conversation.pop(); // Remove the last user message in case of an error to maintain conversation integrity
       }
-    // try{
-    //   const resp = this.conversation[-1];
-    //   const respe=resp.content;
-    //   const responsed = await axios.post('http://127.0.0.1:5000/api/generate', {
-    //     model: this.selectedModel,
-    //     prompt: "我将给你提供一段内容，这段内容是对一张图片的描述。请你用一两个词来总结这段文字，能够实现对这张未知图片的描述和标记。图片的文字描述如下："+respe,
-    //   });
-    //   this.conclude = responsed.data.conclude;
-    // }catch (error) {
-    //   this.error = `Error: ${error.message}`;}
     },
-
     convertToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -151,6 +125,14 @@ export default {
 </script>
 
 <style scoped>
+.ask-button {
+  width: 20%;
+  padding: 5px;
+  margin-bottom: 20px; /* Adjusts space below the button */
+  display: block; /* Makes the button a block element */
+  margin-left: auto; /* Aligns button to center */
+  margin-right: auto; /* Aligns button to center */
+}
 .converse {
   position: fixed;
   top: 10px;
